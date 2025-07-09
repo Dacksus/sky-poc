@@ -1,0 +1,3 @@
+CREATE DATABASE atlas_chronicles;
+CREATE USER atlas WITH ENCRYPTED PASSWORD 'atlas';
+GRANT ALL PRIVILEGES ON DATABASE atlas_forge TO atlas;
