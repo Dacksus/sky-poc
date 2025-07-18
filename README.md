@@ -172,7 +172,7 @@ atlas_forge/
 
 ### Database Schema
 
-The schema uses a versioned approach where:
+The schema uses a versioned approach where: (TODO ERM)
 - **Elements** store static information (type, document reference)
 - **Metadata versions** track structural changes per element (position, hierarchy)
 - **Content versions** track actual content changes per element
@@ -229,7 +229,7 @@ def create_google_docs_snapshot(request: GoogleDocsReference):
     pass
 ```
 
-### Running Tests
+<!-- ### Running Tests
 
 ```bash
 # Install test dependencies
@@ -265,7 +265,7 @@ export POSTGRES_PASSWORD=secure_production_password
 export NOTION_TOKEN=production_notion_token
 
 # Deploy with production settings
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build -->
 ```
 
 ### Monitoring
