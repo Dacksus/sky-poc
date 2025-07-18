@@ -274,8 +274,8 @@ export POSTGRES_PASSWORD=secure_production_password
 export NOTION_TOKEN=production_notion_token
 
 # Deploy with production settings
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build -->
-```
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build 
+```-->
 
 ### Monitoring
 
