@@ -2,8 +2,6 @@ import datetime
 import json
 import logging
 import uuid
-import jsondiff
-import difflib
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from hashlib import blake2b

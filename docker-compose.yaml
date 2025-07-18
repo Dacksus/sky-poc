@@ -23,7 +23,7 @@ services:
     profiles: ["setup"]
     build: 
       context: .
-      dockerfile: Dockerfile.setup-db
+      dockerfile: dockerfiles/setup/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
       POSTGRES_DB: atlas_forge
@@ -84,7 +84,7 @@ services:
   atlas-forge:
     build:
       context: .
-      dockerfile: Dockerfile.atlas-forge
+      dockerfile: dockerfiles/fastapi/Dockerfile
     container_name: atlas-forge
     environment:
       - DATABASE_URL=postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
@@ -115,7 +115,7 @@ services:
   celery-worker:
     build:
       context: .
-      dockerfile: Dockerfile.celery
+      dockerfile: dockerfiles/celery/Dockerfile
     container_name: atlas-celery-worker
     environment:
       - DATABASE_URL=postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
