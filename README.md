@@ -2,6 +2,8 @@
 
 **Atlas Forge** is a (poc of a) document versioning service that provides automated snapshots and change tracking for documents from external sources like Notion. It captures document structure and content changes over time, enabling detailed diff analysis at both structural and content levels.
 
+LIVE DEMO DEPLOYMENT: https://sky-poc.onrender.com/v1/forge/docs (bring your own notion key)
+
 ## Features
 
 - **Document Snapshots**: Automated capturing of document versions via API call or notion webhooks
@@ -20,6 +22,8 @@ Stack:
 - PostgreSQL as application database and redis result backend
 - Celery to run normalization and diffing tasks
 - Redis for task queue
+
+-- TODO create actual architecture diagram
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
