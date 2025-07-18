@@ -24,4 +24,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Default command (can be overridden in docker-compose)
 ENTRYPOINT ["poetry", "run"]
-CMD ["celery", "-A", "atlas_forge.core.normalize", "worker", "--loglevel=info", "--concurrency=2"]
+CMD ["celery", "-A", "atlas_forge.worker", "worker", "--loglevel=info", "--concurrency=2"]
