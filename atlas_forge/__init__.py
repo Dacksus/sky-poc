@@ -20,13 +20,27 @@ logger = logging.getLogger("uvicorn.error")
 
 @asynccontextmanager
 async def lifespan(api: FastAPI):
-    """Setup routines for the app."""
-    initialize_database()
+    """Application lifespan management.
+    
+    Handles startup and shutdown routines for the FastAPI application.
+    During startup, initializes the database schema and triggers.
+    """
 
-    # await queue_init()
+    try:
+        # Initialize database schema and triggers
+        initialize_database()
+        logger.info("Database initialization completed")
+        
+        # Additional startup tasks can be added here
+        # await initialize_other_services()
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {e}")
+        raise
+
     yield
-    # await queue_close()
 
+    # cleanup tasks follow here
 
 DESCRIPTION = """
 Minimal POC to snapshot documents from Notion and show diffs between snapshots.
@@ -38,12 +52,12 @@ api = FastAPI(
     description=DESCRIPTION,
     version="0.1.0",
     docs_url="/v1/forge/docs",
-    redoc_url=None,
+    redoc_url="/v1/forge/redoc",
     openapi_url="/v1/forge/openapi.json",
     swagger_ui_parameters={"defaultModelsExpandDepth": 0},
 )
-api.include_router(router)
 
+# Add CORS middleware for frontend integration
 api.add_middleware(
     middleware_class=CORSMiddleware,
     allow_origins=["*"],
@@ -51,3 +65,15 @@ api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api.include_router(router)
+
+# Health check endpoint
+@api.get("/health")
+def health_check():
+    """Basic health check endpoint for service monitoring."""
+    return {
+        "status": "healthy",
+        "service": "atlas-forge",
+        "version": "0.1.0"
+    }

@@ -37,6 +37,7 @@ class DocumentUpdateResponse(BaseModel):
 
 
 class SnapshotResult(BaseModel):
+    status: str
     document_structure: str | None = None
     document_structure_diff: str | None = None
     changed_elements: str | None = None

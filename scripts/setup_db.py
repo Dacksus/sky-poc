@@ -23,7 +23,7 @@ def main():
     print("🚀 Setting up Atlas Forge database...")
 
     verify_connection()
-    drop_tables
+    drop_tables()
     create_tables()
     create_triggers()
 

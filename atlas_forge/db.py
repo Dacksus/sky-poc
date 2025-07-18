@@ -189,14 +189,9 @@ def drop_triggers(engine: Engine):
 
     drop_statements = [
         "DROP TRIGGER IF EXISTS trigger_update_latest_metadata_version ON document_element_metadatas;",
-        "DROP TRIGGER IF EXISTS trigger_update_latest_metadata_version_on_update ON document_element_metadatas;",
-        "DROP TRIGGER IF EXISTS trigger_update_latest_metadata_version_on_delete ON document_element_metadatas;",
         "DROP TRIGGER IF EXISTS trigger_update_latest_content_version ON document_element_contents;",
         "DROP FUNCTION IF EXISTS update_latest_metadata_version();",
-        "DROP FUNCTION IF EXISTS update_latest_metadata_version_on_update();",
-        "DROP FUNCTION IF EXISTS update_latest_metadata_version_on_delete();",
         "DROP FUNCTION IF EXISTS update_latest_content_version();",
-        "DROP FUNCTION IF EXISTS initialize_latest_versions();",
         "DROP FUNCTION IF EXISTS validate_version_consistency();",
     ]
 

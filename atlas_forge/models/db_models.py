@@ -1,4 +1,12 @@
-"""Model descriptions for database"""
+"""SQLAlchemy database models for Atlas Forge.
+
+This module defines the core data model for document versioning:
+- Documents: Top-level document metadata
+- DocumentElements: Individual blocks/components within documents
+- DocumentElementMetadata: Versioned structural information
+- DocumentElementContent: Versioned content data  
+- Snapshots: Change tracking and processing status
+"""
 
 import datetime
 from uuid import UUID, uuid4
@@ -31,7 +39,11 @@ def compile_smallserial_pg(type_, compiler, **kw):
 
 
 class Document(Base):
-    """Persistent metadata for a single unique document. Actual content is stored in versions"""
+    """Top-level document metadata.
+    
+    Represents a single document from an external source (e.g., Notion page).
+    The actual content is stored in versioned DocumentElements.
+    """
 
     __tablename__ = "documents"
 
@@ -55,16 +67,14 @@ class DocumentElement(Base):
 
     __tablename__ = "document_elements"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True) # Often external ID (e.g., Notion block ID)
     # id of the parent document
     document_id: Mapped[UUID] = mapped_column(
         ForeignKey("documents.id"), nullable=False
     )
-    # type of the element (e.g., heading, paragraph, list, etc.)
-    element_type: Mapped[str]
-    # convenience pointers to latest versions
+    element_type: Mapped[str] # (e.g., heading, paragraph, list, etc.)
+    # Cached latest version pointers (maintained by triggers)
     latest_metadata_version: Mapped[datetime.datetime] = mapped_column(nullable=True)
-    # latest_metadata_hash:  Mapped[str]
     latest_content_version: Mapped[datetime.datetime] = mapped_column(nullable=True)
     latest_content_hash: Mapped[str] = mapped_column(nullable=True)
 
@@ -78,11 +88,9 @@ class DocumentElementMetadata(Base):
     document_element_id: Mapped[UUID] = mapped_column(
         ForeignKey("document_elements.id")
     )
-    version: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
-    # level of nesting / indentation of the element to map document structure
-    level: Mapped[int]
-    # absolute position for ordering
-    position: Mapped[int]
+    version: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+    level: Mapped[int] # Nesting depth (0 = root level)
+    position: Mapped[int] # absolute position for ordering
     # the last element of lower level preceding this element in the document structure
     parent_element: Mapped[UUID] = mapped_column(
         ForeignKey("document_elements.id"), nullable=True
@@ -107,14 +115,18 @@ class DocumentElementMetadata(Base):
 
 
 class DocumentElementContent(Base):
-    """The actual content of an element"""
+    """Versioned content data for document elements.
+    
+    Stores the actual content of elements in both raw and formatted forms.
+    Each content change creates a new version with a content hash for quick comparison.
+    """
 
     __tablename__ = "document_element_contents"
 
     document_element_id: Mapped[UUID] = mapped_column(
         ForeignKey("document_elements.id")
     )
-    version: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+    version: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
     content_raw: Mapped[str]
     hash_raw: Mapped[str]
     content_formatted: Mapped[str]
@@ -132,12 +144,20 @@ class Snapshot(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id"), nullable=True)
     reference_id: Mapped[str]
+
+    # Timing / lifecyle information
     triggered_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
     executed_at: Mapped[datetime.datetime] = mapped_column(nullable=True)
     finished_at: Mapped[datetime.datetime] = mapped_column(nullable=True)
-    status: Mapped[str] = mapped_column(server_default="open")  # pending, done
+
+    # Processing status: 'open', 'pending', 'done', 'error' TODO SQL enum
+    status: Mapped[str] = mapped_column(server_default="open")
+
+    # Snapshot results (JSON strings)
     document_structure: Mapped[str] = mapped_column(nullable=True)
     document_structure_diff: Mapped[str] = mapped_column(nullable=True)
     changed_elements: Mapped[str] = mapped_column(nullable=True)
     changed_elements_diff: Mapped[str] = mapped_column(nullable=True)
+
+    # Error info
     error: Mapped[str] = mapped_column(nullable=True)
