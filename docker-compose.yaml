@@ -1,0 +1,171 @@
+services:
+  db:
+    image: postgres:16.9-alpine
+    container_name: atlas-forge-db
+    restart: always
+    environment:
+      POSTGRES_DB: atlas_forge
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas_forge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - atlas-network
+
+  setup-db:
+    profiles: ["setup"]
+    build: 
+      context: .
+      dockerfile: Dockerfile.setup-db
+    environment:
+      DATABASE_URL: postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+      POSTGRES_DB: atlas_forge
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+      PYTHONPATH: /app
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - atlas-network
+ 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - atlas-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: atlas-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: smith@atlas-forge.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - atlas-network
+    profiles:
+      - dev  # Only start with --profile dev
+ 
+  redis:
+    image: redis:8-alpine
+    container_name: atlas-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - atlas-network
+  
+  atlas-forge:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-forge
+    container_name: atlas-forge
+    environment:
+      - DATABASE_URL=postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=db+postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+      - NOTION_TOKEN=${NOTION_TOKEN}
+      - DEBUG=true
+      - ALWAYS_RESET=true
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/__pycache__  # Exclude pycache
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - atlas-network
+    # restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: atlas-celery-worker
+    environment:
+      - DATABASE_URL=postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=db+postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+      - NOTION_TOKEN=${NOTION_TOKEN}
+      - DEBUG=true
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - atlas-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A atlas_forge inspect ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery-flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: atlas-celery-flower
+    command: celery -A atlas_forge flower --port=5555 --broker=redis://redis:6379
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=db+postgresql+psycopg://atlas:atlas@db:5432/atlas_forge
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - atlas-network
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  atlas-network:
+    driver: bridge
