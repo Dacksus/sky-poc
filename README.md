@@ -4,6 +4,15 @@
 
 LIVE DEMO DEPLOYMENT: https://sky-poc.onrender.com/v1/forge/docs (bring your own notion key)
 
+Demo steps:
+1. Setup a notion integration for the target workspace (see below for rerence)
+2. Go to https://sky-poc.onrender.com/v1/forge/docs#/documents/create_new_document_v1_forge_documents_post
+3. Paste the page id of the notion page to track as 'reference_id' and the token of step 1 as 'notion_token' and execute the API call
+4. Do some changes on the notion page
+5. Execute the call of step 3 again -> copy the result_id
+6. Open the /v1/forge/documentssnapshot/{snapshot_id} endpoint and paste the result_id as snapshot_id
+7. The result includes a hierarchic representation of the document, changes of the structure between the latest 2 snapshots, all blocks that changed content-wise and a detailed gitdiff-like description of what hanged in each element. See models/api_models.py and core/diff.py for more explanation. 
+
 ## Features
 
 - **Document Snapshots**: Automated capturing of document versions via API call or notion webhooks
