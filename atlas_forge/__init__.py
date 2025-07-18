@@ -1,16 +1,22 @@
-"""Atlas Forge - The Atlas Data Service"""
+"""Atlas Forge - The Atlas Document Versioning Service
 
+This module initializes the FastAPI application with proper lifecycle management,
+middleware configuration, and route registration.
+"""
+
+import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes.public import router
 
 from atlas_forge.db import initialize_database
-import logging
-import sys
 
-logger = logging.getLogger('uvicorn.error')
+from .routes.public import router
+
+logger = logging.getLogger("uvicorn.error")
+
 
 @asynccontextmanager
 async def lifespan(api: FastAPI):

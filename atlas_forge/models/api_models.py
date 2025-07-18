@@ -1,12 +1,16 @@
 """Model definitions for the API"""
-from pydantic import BaseModel
+
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from .db_models import DocumentElement
+
 
 class DocumentReference(BaseModel):
     reference_id: str
     notion_token: str | None = None
+
 
 class NewDocument(BaseModel):
     title: str
@@ -31,15 +35,16 @@ class DocumentUpdate(NewDocument):
 class DocumentUpdateResponse(BaseModel):
     diff_id: str
 
+
 class SnapshotResult(BaseModel):
     document_structure: str | None = None
     document_structure_diff: str | None = None
     changed_elements: str | None = None
     changed_elements_diff: str | None = None
 
+
 # class DocumentStructure(BaseModel):
 #     """internal and temporary representation of a notion page"""
 #     element: DocumentElement
 #     level: int
 #     raw_hash: str
-

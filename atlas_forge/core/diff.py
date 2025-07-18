@@ -1,30 +1,30 @@
 """Basic diffing functionality for documents, handling content diffs and structure diffs separately"""
-import json
-import jsondiff
-import difflib
 
+import difflib
+import json
+from collections import defaultdict
 from typing import Any
 from uuid import UUID
 
-from collections import defaultdict
+import jsondiff
 
 from atlas_forge.db import (
+    Session,
     db_get_document_by_id,
-    db_get_latest_elements_by_document,
     db_get_latest_content_pair_by_id,
+    db_get_latest_elements_by_document,
     db_get_previous_snapshot,
     db_get_snapshot_by_id,
-    Session
 )
 from atlas_forge.models.db_models import (
     Document,
     DocumentElement,
     DocumentElementContent,
     DocumentElementMetadata,
-    Snapshot
+    Snapshot,
 )
-
 from atlas_forge.worker import app, logger
+
 
 def generate_document_structure_versioned(document_id: str) -> dict[UUID, Any] | None:
     """
@@ -78,13 +78,13 @@ def generate_document_structure_versioned(document_id: str) -> dict[UUID, Any] |
     document = db_get_document_by_notion_id(document_id)
     if not document:
         return None
-    
+
     # recursively resolve the document and build the structured dict TODO: store current version in db?
 
 
 def generate_document_structure(document_id: UUID) -> list[dict[str, Any]]:
     """
-    
+
     Example:
 
     [
@@ -110,7 +110,7 @@ def generate_document_structure(document_id: UUID) -> list[dict[str, Any]]:
             children_by_parent[metadata.parent_element].append(element.id)
         else:
             root_elements.append(element.id)
-    
+
     def build_structure(element_ids: list[UUID]) -> list[dict[str, Any]]:
         structure = []
         for element_id in element_ids:
@@ -118,13 +118,15 @@ def generate_document_structure(document_id: UUID) -> list[dict[str, Any]]:
             child_structure = build_structure(children) if children else []
             structure.append({str(element_id): child_structure})
         return structure
-    
+
     return build_structure(root_elements)
 
 
 @app.task
 def diff_elements(snapshot_id: UUID):
-    logger.info(f"==========\nrunning element diff for snapshot: {snapshot_id}\n==========")
+    logger.info(
+        f"==========\nrunning element diff for snapshot: {snapshot_id}\n=========="
+    )
     snapshot = db_get_snapshot_by_id(snapshot_id)
     changed_elements = json.loads(snapshot.changed_elements)
     summary_diff = {}
@@ -137,24 +139,26 @@ def diff_elements(snapshot_id: UUID):
         for d in diff:
             logger.debug(d)
             element_summary.append(d)
-        summary_diff[element_id] = ''.join(element_summary)
+        summary_diff[element_id] = "".join(element_summary)
     snapshot.changed_elements_diff = json.dumps(summary_diff)
 
     with Session() as session:
         session.add(snapshot)
         session.commit()
 
+
 @app.task
-def diff_structure(
-    snapshot_id: UUID, 
-    new_structure: list[dict[str, Any]]
-):
-    logger.info(f"==========\nrunning structure diff for snapshot: {snapshot_id}\n==========")
+def diff_structure(snapshot_id: UUID, new_structure: list[dict[str, Any]]):
+    logger.info(
+        f"==========\nrunning structure diff for snapshot: {snapshot_id}\n=========="
+    )
     snapshot = db_get_snapshot_by_id(snapshot_id)
     old_snapshot = db_get_previous_snapshot(snapshot_id)
     old_structure = json.loads(old_snapshot.document_structure)
     if not old_structure:
-        logger.warn(f"Couldn't find an earlier snapshot to compare against for document_id {snapshot.document_id}")
+        logger.warn(
+            f"Couldn't find an earlier snapshot to compare against for document_id {snapshot.document_id}"
+        )
         return
     diff = jsondiff.diff(old_structure, new_structure, dump=True)
     snapshot.document_structure_diff = diff
@@ -162,4 +166,3 @@ def diff_structure(
     with Session() as session:
         session.add(snapshot)
         session.commit()
-
