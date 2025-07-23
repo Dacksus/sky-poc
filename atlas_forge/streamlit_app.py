@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime
 import time
 import pandas as pd
+import os
 
 # Add project root to path for imports
 project_root = Path(__file__).parent
@@ -28,7 +29,7 @@ st.set_page_config(
 )
 
 # Configuration
-API_BASE_URL = "http://localhost:8000/v1/forge"
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000/v1/forge")
 CELERY_FLOWER_URL = "http://localhost:5555"
 
 def main():
