@@ -19,6 +19,7 @@ from atlas_forge.db import (
     db_get_element_hash_by_id,
     db_get_latest_content_for_element,
     db_get_snapshot_by_id,
+    db_get_snapshot_ids,
 )
 from atlas_forge.models.api_models import (
     DocumentReference,
@@ -73,7 +74,7 @@ def create_new_document(request: DocumentReference) -> NewDocumentResponse:
             detail=f"Failed to create document snapshot: {str(e)}"
         )
 
-@router.get("snapshot/{snapshot_id}")
+@router.get("/snapshot/{snapshot_id}")
 def get_result(snapshot_id: str) -> SnapshotResult:
     """Retrieve the results of a document snapshot.
     
@@ -95,18 +96,31 @@ def get_result(snapshot_id: str) -> SnapshotResult:
     snapshot = db_get_snapshot_by_id(uuid.UUID(snapshot_id))
     if not snapshot:
         raise HTTPException(status_code=404, detail="no snapshot exists with that id")
+    doc = db_get_document_by_id(snapshot.document_id)
     return SnapshotResult(
         status=snapshot.status,
+        title=doc.title,
         document_structure=snapshot.document_structure,
         document_structure_diff=snapshot.document_structure_diff,
         changed_elements=snapshot.changed_elements,
         changed_elements_diff=snapshot.changed_elements_diff,
+        executed_at=snapshot.executed_at,
+        reference_id=snapshot.reference_id
     )
 
 
 @router.put("/{document_id}")
 def update_document(request: DocumentUpdate) -> DocumentUpdateResponse:
     pass
+
+@router.get("/snapshot")
+def _get_snapshot_ids() -> list[NewDocumentResponse]:
+    snapshots = db_get_snapshot_ids()
+    logger.info(f"collectiong {len(snapshots)} snapshots")
+    result = [NewDocumentResponse(result_id=str(snapshot_id)) for snapshot_id in snapshots]
+    if result:
+        return result
+    raise HTTPException(status_code=500)
 
 
 @router.post("/notion-webhook")

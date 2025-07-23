@@ -354,3 +354,8 @@ def db_get_previous_snapshot(snapshot_id: uuid.UUID) -> Snapshot:
     )
     with Session() as session:
         return session.scalars(stmt).first()
+
+def db_get_snapshot_ids() -> list[uuid.UUID]:
+    stmt = select(Snapshot.id).order_by(Snapshot.executed_at.desc())
+    with Session() as session:
+        return session.scalars(stmt).all()

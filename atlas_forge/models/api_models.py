@@ -1,5 +1,5 @@
 """Model definitions for the API"""
-
+import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -38,10 +38,13 @@ class DocumentUpdateResponse(BaseModel):
 
 class SnapshotResult(BaseModel):
     status: str
+    title: str | None = None
     document_structure: str | None = None
     document_structure_diff: str | None = None
     changed_elements: str | None = None
     changed_elements_diff: str | None = None
+    executed_at: datetime.datetime | None = None
+    reference_id: str | None = None
 
 
 # class DocumentStructure(BaseModel):

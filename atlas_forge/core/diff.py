@@ -289,37 +289,20 @@ def diff_structure(snapshot_id: UUID, new_structure: list[dict[str, Any]]):
         raise ValueError(f"Snapshot {snapshot_id} not found")
 
     old_snapshot = db_get_previous_snapshot(snapshot_id)
+    old_structure = ""
     if not old_snapshot or not old_snapshot.document_structure:
         logger.warn(f"No previous snapshot found for comparison with {snapshot_id}")
-    try:
+    else:
         old_structure = json.loads(old_snapshot.document_structure)
-
+    try:
         diff_result = jsondiff.diff(old_structure, new_structure, syntax="symmetric", dump=True)
 
-        # Create a more readable diff summary
         diff_summary = {
             # "old_snapshot_id": str(old_snapshot.id),
             "old_elements_count": len(old_structure),
             "new_elements_count": len(new_structure),
             "raw_diff": diff_result
         }
-        
-        # # Add human-readable change summary
-        # if isinstance(diff_result, dict):
-        #     changes = []
-        #     for key, value in diff_result.items():
-        #         if key.startswith('$'):
-        #             # jsondiff metadata
-        #             continue
-        #         elif isinstance(value, dict) and '$delete' in str(value):
-        #             changes.append(f"Removed element: {key}")
-        #         elif isinstance(value, dict) and '$insert' in str(value):
-        #             changes.append(f"Added element: {key}")
-        #         else:
-        #             changes.append(f"Modified element: {key}")
-        #             # TODO include element diff here or combine later?
-            
-        #     diff_summary["change_summary"] = changes
 
         snapshot.document_structure_diff = json.dumps(diff_summary, indent=2)
 
