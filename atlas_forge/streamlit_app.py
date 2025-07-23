@@ -175,6 +175,8 @@ def display_snapshots():
                     changes = f"{structure_changes}/{content_changes}"
                 except KeyError as e:
                     pass
+                except TypeError as e:
+                    pass
                 st.metric("Changes (structure/content)", changes)
             with col1:
                 st.metric("Created", datetime.fromisoformat(snapshot.get("executed_at", "N/A")).strftime('%a %d %b %Y, %I:%M%p'))
